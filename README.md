@@ -11,11 +11,11 @@ command language, so the driver converts CUPS raster pages into TSPL
 See [docs/REVERSE_ENGINEERING.md](docs/REVERSE_ENGINEERING.md) for how the
 vendor driver is studied and what is still unverified.
 
-> **Status: 0.1.0, pre-hardware-validation.** The filter, PPDs and tooling
-> are complete and pass a 28-case test suite that renders the output stream
-> dot-for-dot, but nobody has yet reported results on a physical SP410.
-> If you own one, a five-minute report helps a lot — see
-> [docs/HARDWARE.md](docs/HARDWARE.md#models).
+> **Status: 0.1.0, tested on real hardware.** The SP410 works when the
+> driver is compiled and installed on a Raspberry Pi 3B+; Raspberry Pi 4 and
+> later are expected to work as well. The SP410BT and SP420 still await
+> hardware reports. If you own one of those, a five-minute report helps a
+> lot — see [docs/HARDWARE.md](docs/HARDWARE.md#models).
 
 ## What's in the box
 
