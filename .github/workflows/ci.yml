@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y build-essential libcups2-dev python3
       - name: Build and test (-Werror)
-        run: make CFLAGS="-O2 -g -Werror" check
+        run: scripts/ci-run.sh "make check" make CFLAGS="-O2 -g -Werror" check
       - name: Sanitizer run
         run: |
           make clean
@@ -40,7 +40,7 @@ jobs:
           platforms: arm
       - name: Build, test and package in a bookworm/armhf container
         run: |
-          docker run --rm --platform linux/arm/v7 -v "$PWD:/src" -w /src debian:bookworm bash -ec '
+          scripts/ci-run.sh "armhf build" docker run --rm --platform linux/arm/v7 -v "$PWD:/src" -w /src debian:bookworm bash -ec '
             apt-get update -qq
             apt-get install -y -qq build-essential libcups2-dev python3 file >/dev/null
             make CFLAGS="-O2 -Werror" check
