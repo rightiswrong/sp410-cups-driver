@@ -1,0 +1,30 @@
+# udev rules for iDPRT SP410-family TSPL label printers.
+# Part of sp410-cups-driver - SPDX-License-Identifier: Apache-2.0
+#
+# USB ID 20d1:7008 is the ID reported for the SP410/SP420 by community
+# driver tables (20d1 = Xiamen Hanin/HPRT, iDPRT's parent).  Confirm yours
+# with `lsusb` and report it in docs/HARDWARE.md if it differs.
+#
+# What these rules do:
+#   * let members of the "lp" group (and the logged-in seat user) talk to the
+#     printer without root - needed for `sp410ctl` and for CUPS' usb backend;
+#   * disable USB autosuspend for the printer, which on Raspberry Pi can
+#     otherwise drop the first job after the printer has been idle;
+#   * add a stable /dev/usb/idprt-sp410-N symlink for the usblp node.
+
+ACTION!="add|change", GOTO="idprt_sp410_end"
+
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", \
+  ATTR{idVendor}=="20d1", ATTR{idProduct}=="7008", \
+  MODE="0664", GROUP="lp", TAG+="uaccess", TEST=="power/control", ATTR{power/control}="on"
+
+SUBSYSTEM=="usbmisc", KERNEL=="lp[0-9]*", \
+  ATTRS{idVendor}=="20d1", ATTRS{idProduct}=="7008", \
+  MODE="0660", GROUP="lp", TAG+="uaccess", SYMLINK+="usb/idprt-sp410-%n"
+
+# If your unit enumerates with a different product ID, a broader match on the
+# vendor + USB printer interface class can be used instead (uncomment):
+# SUBSYSTEM=="usbmisc", KERNEL=="lp[0-9]*", ATTRS{idVendor}=="20d1", \
+#   MODE="0660", GROUP="lp", TAG+="uaccess", SYMLINK+="usb/idprt-%n"
+
+LABEL="idprt_sp410_end"

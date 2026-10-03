@@ -1,0 +1,20 @@
+# build output
+/build/
+*.o
+
+# reverse-engineering workspaces - never commit vendor material
+/vendor/
+/vendor-inspect/
+/compare-out/
+*.pcap
+*.pcapng
+*.prn
+*.ras
+
+# editors / OS
+*.swp
+*~
+.vscode/
+.idea/
+.DS_Store
+__pycache__/
