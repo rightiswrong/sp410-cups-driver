@@ -4,7 +4,7 @@
 
 | Model | Head | Max width | Interface | PPD | Status |
 |---|---|---|---|---|---|
-| iDPRT SP410 | 203 dpi | 108 mm | USB | `idprt-sp410.ppd` | protocol-compatible, tested with the named hardware, works on when compiled and installed on RPi 3B+ |
+| iDPRT SP410 | 203 dpi | 108 mm | USB | `idprt-sp410.ppd` | protocol-compatible, tested with the named hardware, works when compiled and installed on RPi 3B+. I'm expecting this will work on RPi 4 and above as well.|
 | iDPRT SP410BT | 203 dpi | 108 mm | USB, Bluetooth SPP | `idprt-sp410bt.ppd` | protocol-compatible, awaiting hardware report |
 | iDPRT SP420 | 203 dpi | 108 mm | USB | `idprt-sp420.ppd` | protocol-compatible; other open TSPL filters report it working |
 
