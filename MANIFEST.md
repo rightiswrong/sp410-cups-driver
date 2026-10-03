@@ -33,6 +33,7 @@ the `.deb` puts it. Keep this in sync when adding, renaming or removing files.
 | `packaging/build-deb.sh` | Builds `build/sp410-cups-driver_<ver>_<arch>.deb` with `dpkg-deb` (amd64/arm64/armhf) |
 | `scripts/install.sh` | Source install for end users; optional dependency install and queue creation with USB URI auto-detection |
 | `scripts/uninstall.sh` | Removes a source install, optionally the queues that use it |
+| `scripts/ci-run.sh` | CI helper: runs a step and, on failure, posts its last 80 output lines as an error annotation |
 
 ## Tests
 

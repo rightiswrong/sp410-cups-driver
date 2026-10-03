@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [0.1.0] - unreleased
 
+### Fixed
+- Cancel test failed on Python 3.11/3.12 ("flush of closed file"), which
+  stopped every CI job before the `.deb` packages were built.
+- CI now shows the tail of a failing build as an error annotation.
+
 ### Added
 - `sp410-rastertotspl` CUPS filter: CUPS v1–v3 and PWG raster input in
   1/2/4/8/16-bit K, W/sGray, sRGB/AdobeRGB and CMYK; automatic resampling of

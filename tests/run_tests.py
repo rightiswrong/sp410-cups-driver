@@ -307,7 +307,8 @@ def t_sigterm_mid_job(c):
     p.stdin.flush()
     time.sleep(0.3)
     p.send_signal(signal.SIGTERM)
-    p.stdin.close()
+    # Let communicate() close stdin itself: closing it first makes
+    # Python <= 3.12 raise "flush of closed file".
     out, err = p.communicate(timeout=10)
     assert p.returncode == 0, err
     assert out == b"", "canceled page must not be emitted"
