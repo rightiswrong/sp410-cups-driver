@@ -42,7 +42,7 @@ Depends: libc6, libcups2 (>= 2.2) | libcups2t64, cups (>= 2.2) | cups-daemon (>=
 Recommends: cups-filters
 Section: misc
 Priority: optional
-Homepage: https://github.com/OWNER/sp410-cups-driver
+Homepage: https://github.com/rightiswrong/sp410-cups-driver
 Description: Open-source CUPS driver for iDPRT SP410-family label printers
  Clean-room CUPS raster filter that converts print jobs to TSPL for the
  iDPRT SP410, SP410BT and SP420 203-dpi direct-thermal label printers.
