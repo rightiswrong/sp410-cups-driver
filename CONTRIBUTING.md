@@ -38,3 +38,16 @@ If you own an SP410, SP410BT or SP420, please open an issue with:
 
 Imperative summary line ≤ 72 characters, blank line, body explaining *why*.
 Reference the open-question number when a change settles one.
+
+## Releasing
+
+1. Set the new version in `VERSION`, run `make ppd` (the PPDs carry the
+   version), and add the version's section to `CHANGELOG.md`
+   (`## [X.Y.Z] - YYYY-MM-DD`). Push to `main` and wait for CI to pass.
+2. Either push a tag (`git tag -a vX.Y.Z -m "..." && git push origin vX.Y.Z`),
+   or on GitHub open **Actions → CI → Run workflow**, choose `main`, tick
+   **publish_release** and run it.
+3. CI rebuilds, reruns every test and only then publishes the release:
+   `.deb` packages for amd64, arm64 and armhf built on Debian 12, a source
+   tarball, `SHA256SUMS.txt`, and notes taken from the changelog. A manual run
+   tags the exact commit it built.

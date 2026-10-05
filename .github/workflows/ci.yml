@@ -3,6 +3,12 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Publish a release for the version in VERSION (creates tag vX.Y.Z on this commit)"
+        type: boolean
+        default: false
 
 jobs:
   build-test:
@@ -30,26 +36,67 @@ jobs:
           name: deb-${{ matrix.os }}
           path: build/*.deb
 
-  raspberry-pi-armhf:
-    # Debian bookworm armhf == Raspberry Pi OS 32-bit userland, run under QEMU.
+  debian-bookworm:
+    # Release packages: built, tested and install-tested on Debian 12
+    # "bookworm" (= Raspberry Pi OS bookworm userland). Its older glibc means
+    # the same .deb also installs on newer Debian, Raspberry Pi OS and Ubuntu.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: arm64
+            platform: linux/arm64
+          - arch: armhf
+            platform: linux/arm/v7
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
+        if: matrix.arch != 'amd64'
         with:
-          platforms: arm
-      - name: Build, test and package in a bookworm/armhf container
+          platforms: arm,arm64
+      - name: Build, test, package and install-test (bookworm/${{ matrix.arch }})
         run: |
-          scripts/ci-run.sh "armhf build" docker run --rm --platform linux/arm/v7 -v "$PWD:/src" -w /src debian:bookworm bash -ec '
+          scripts/ci-run.sh "bookworm ${{ matrix.arch }}" docker run --rm --platform ${{ matrix.platform }} \
+            -v "$PWD:/src" -w /src debian:bookworm bash -ec '
             apt-get update -qq
             apt-get install -y -qq build-essential libcups2-dev python3 file >/dev/null
             make CFLAGS="-O2 -Werror" check
             make deb
+            test "$(dpkg --print-architecture)" = "${{ matrix.arch }}"
+            # Install the package exactly as a user would; pulls in cups.
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ./build/sp410-cups-driver_*_${{ matrix.arch }}.deb >/dev/null
+            /usr/lib/cups/filter/sp410-rastertotspl --version
+            test -f /usr/share/ppd/sp410-cups-driver/idprt-sp410.ppd
+            sp410ctl --dry-run test-label | tspl-decode - | tail -n 2
+            echo "needs glibc: $(objdump -T build/sp410-rastertotspl | grep -o "GLIBC_[0-9.]*" | sort -uV | tail -n 1)"
             file build/sp410-rastertotspl'
       - uses: actions/upload-artifact@v4
         with:
-          name: deb-armhf
+          name: deb-bookworm-${{ matrix.arch }}
           path: build/*.deb
+          if-no-files-found: error
+
+  ubuntu-install:
+    # The bookworm amd64 package must also install and run on Ubuntu 24.04.
+    needs: debian-bookworm
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: deb-bookworm-amd64
+          path: deb
+      - name: Install on Ubuntu 24.04
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ./deb/sp410-cups-driver_*_amd64.deb
+          /usr/lib/cups/filter/sp410-rastertotspl --version
+          test -f /usr/share/ppd/sp410-cups-driver/idprt-sp410.ppd
+          sp410ctl --dry-run test-label | tspl-decode - | tail -n 2
+          sudo apt-get remove -y -qq sp410-cups-driver
+          test ! -e /usr/lib/cups/filter/sp410-rastertotspl
 
   lint:
     runs-on: ubuntu-24.04
@@ -59,3 +106,85 @@ jobs:
       - run: shellcheck scripts/*.sh packaging/*.sh tools/re/*.sh
       - run: python3 -m py_compile tools/*.py tools/re/*.py tests/*.py ppd/gen_ppd.py
       - run: python3 ppd/gen_ppd.py --check
+
+  release:
+    # Runs for a pushed version tag (e.g. v1.0.0), or when started by hand
+    # from the Actions tab with "publish_release" ticked - and only after every
+    # build, test and install check in this same run has passed. Publishes
+    # exactly the packages built in this run.
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+    needs: [build-test, debian-bookworm, ubuntu-install, lint]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: deb-bookworm-*
+          path: debs
+          merge-multiple: true
+      - name: Work out the release tag
+        run: |
+          v="$(cat VERSION)"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            if [ "${GITHUB_REF_NAME}" != "v${v}" ]; then
+              echo "::error title=Release::tag ${GITHUB_REF_NAME} does not match VERSION ${v}"
+              exit 1
+            fi
+          elif [ "${GITHUB_REF_NAME}" != "main" ]; then
+            echo "::error title=Release::manual releases are only made from main (got ${GITHUB_REF_NAME})"
+            exit 1
+          fi
+          echo "VERSION=${v}" >> "$GITHUB_ENV"
+          echo "TAG=v${v}" >> "$GITHUB_ENV"
+      - name: Assemble release files
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for a in amd64 arm64 armhf; do
+            cp "debs/sp410-cups-driver_${VERSION}_${a}.deb" dist/
+          done
+          git archive --format=tar.gz --prefix="sp410-cups-driver-${VERSION}/" \
+            -o "dist/sp410-cups-driver-${VERSION}.tar.gz" HEAD
+          (cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          awk -v v="${VERSION}" '
+            $0 ~ "^## \\[" v "\\]" {on=1; next}
+            on && /^## \[/ {exit}
+            on {print}' CHANGELOG.md > notes.md
+          {
+            echo
+            echo "### Install"
+            echo
+            echo "Pick the package for \`dpkg --print-architecture\`: \`armhf\` (32-bit Raspberry Pi OS), \`arm64\` (64-bit Raspberry Pi OS), \`amd64\` (PCs)."
+            echo "Built on Debian 12, so it installs on Raspberry Pi OS bookworm or later, Debian 12+ and Ubuntu 24.04+:"
+            echo
+            echo '```sh'
+            echo "sudo apt install ./sp410-cups-driver_${VERSION}_arm64.deb"
+            echo '```'
+            echo
+            echo "Then add the printer in the CUPS web interface (http://localhost:631) and choose *iDPRT SP410, sp410-cups-driver ${VERSION}*, or see the README."
+            echo
+            echo "### SHA-256"
+            echo
+            echo '```'
+            cat dist/SHA256SUMS.txt
+            echo '```'
+            echo
+            echo "Built and tested by CI run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} from commit ${GITHUB_SHA}."
+          } >> notes.md
+          cat notes.md
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="sp410-cups-driver ${VERSION}"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release upload "${TAG}" dist/* --clobber
+            gh release edit "${TAG}" --title "${title}" --notes-file notes.md
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            gh release create "${TAG}" dist/* --verify-tag --title "${title}" --notes-file notes.md
+          else
+            gh release create "${TAG}" dist/* --target "${GITHUB_SHA}" --title "${title}" --notes-file notes.md
+          fi
+          gh release view "${TAG}" --json url,assets --jq '.url, (.assets[].name)'

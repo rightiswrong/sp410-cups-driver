@@ -11,7 +11,7 @@ command language, so the driver converts CUPS raster pages into TSPL
 See [docs/REVERSE_ENGINEERING.md](docs/REVERSE_ENGINEERING.md) for how the
 vendor driver is studied and what is still unverified.
 
-> **Status: 0.1.0, tested on real hardware.** The SP410 works when the
+> **Status: 1.0.0, tested on real hardware.** The SP410 works when the
 > driver is compiled and installed on a Raspberry Pi 3B+; Raspberry Pi 4 and
 > later are expected to work as well. The SP410BT and SP420 still await
 > hardware reports. If you own one of those, a five-minute report helps a
@@ -51,6 +51,25 @@ than one 124 KB block. Details: [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
 ## Install
 
+### Raspberry Pi / Debian / Ubuntu, from a release (easiest)
+
+Download the `.deb` for your system from
+[Releases](https://github.com/rightiswrong/sp410-cups-driver/releases/latest).
+`dpkg --print-architecture` tells you which one you need: `armhf` for
+32-bit Raspberry Pi OS, `arm64` for 64-bit Raspberry Pi OS, `amd64` for PCs.
+The packages are built on Debian 12, so they install on Raspberry Pi OS
+(bookworm or later), Debian 12+ and Ubuntu 24.04+.
+
+```sh
+sudo apt install ./sp410-cups-driver_1.0.0_arm64.deb   # use your architecture
+sudo lpadmin -p SP410 -E -v "$(sudo lpinfo -v | awk '/usb:.*(iDPRT|SP410|20d1)/{print $2; exit}')" \
+     -P /usr/share/ppd/sp410-cups-driver/idprt-sp410.ppd -o PageSize=w288h432
+lp -d SP410 /usr/share/cups/data/testprint
+```
+
+Check the download against `SHA256SUMS.txt` on the release page with
+`sha256sum -c SHA256SUMS.txt --ignore-missing`.
+
 ### Raspberry Pi / Debian / Ubuntu, from source
 
 ```sh
@@ -66,7 +85,7 @@ sudo ./scripts/install.sh --add-queue SP410  # installs, then creates queue "SP4
 ### As a .deb
 
 ```sh
-make deb                                     # build/sp410-cups-driver_0.1.0_<arch>.deb
+make deb                                     # build/sp410-cups-driver_1.0.0_<arch>.deb
 sudo apt install ./build/sp410-cups-driver_*.deb
 ```
 

@@ -58,7 +58,7 @@ the `.deb` puts it. Keep this in sync when adding, renaming or removing files.
 |---|---|
 | `MANIFEST.md` | This file |
 | `CONTRIBUTING.md` | Hardware reports, clean-room rules, code and test conventions |
-| `.github/workflows/ci.yml` | CI: x86-64 and arm64 build + tests + sanitizers + `.deb`; Debian bookworm armhf (Raspberry Pi OS) under QEMU; ShellCheck and PPD freshness |
+| `.github/workflows/ci.yml` | CI: x86-64 and arm64 build + tests + sanitizers; release `.deb`s built, tested and install-tested on Debian 12 for amd64/arm64/armhf (ARM under QEMU); Ubuntu 24.04 install check; ShellCheck and PPD freshness; publishes GitHub releases on a `v*` tag or a manual "publish_release" run |
 | `.gitignore` | Build output and RE workspaces (vendor material must never be committed) |
 | `.editorconfig` | Indentation and line-ending conventions |
 
