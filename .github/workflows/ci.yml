@@ -10,6 +10,10 @@ on:
         type: boolean
         default: false
 
+# Least privilege: jobs get read-only tokens unless they ask for more.
+permissions:
+  contents: read
+
 jobs:
   build-test:
     strategy:
@@ -18,7 +22,7 @@ jobs:
         os: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y build-essential libcups2-dev python3
       - name: Build and test (-Werror)
@@ -31,7 +35,7 @@ jobs:
           make clean
       - name: Build .deb
         run: make deb
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: deb-${{ matrix.os }}
           path: build/*.deb
@@ -52,8 +56,8 @@ jobs:
             platform: linux/arm/v7
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
         if: matrix.arch != 'amd64'
         with:
           platforms: arm,arm64
@@ -73,7 +77,7 @@ jobs:
             sp410ctl --dry-run test-label | tspl-decode - | tail -n 2
             echo "needs glibc: $(objdump -T build/sp410-rastertotspl | grep -o "GLIBC_[0-9.]*" | sort -uV | tail -n 1)"
             file build/sp410-rastertotspl'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: deb-bookworm-${{ matrix.arch }}
           path: build/*.deb
@@ -84,7 +88,7 @@ jobs:
     needs: debian-bookworm
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: deb-bookworm-amd64
           path: deb
@@ -101,7 +105,7 @@ jobs:
   lint:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - run: sudo apt-get install -y shellcheck
       - run: shellcheck scripts/*.sh packaging/*.sh tools/re/*.sh
       - run: python3 -m py_compile tools/*.py tools/re/*.py tests/*.py ppd/gen_ppd.py
@@ -118,8 +122,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: deb-bookworm-*
           path: debs
