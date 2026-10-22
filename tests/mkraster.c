@@ -290,6 +290,13 @@ main(int argc, char *argv[])
     fill(&c, 0, 40, 945, 60, 0, 0, 0);
     rc = write_page(ras, &c, 203, ENC_K1, 1);
   }
+  else if (!strcmp(pat, "toowide"))
+  {
+    c = canvas_new(12000, 64);                         /* width over the limit */
+    fill(&c, 0, 20, 12000, 40, 0, 0, 0);
+    rc = write_page(ras, &c, 203, ENC_K1, 1);
+    pbm = NULL;
+  }
   else if (!strcmp(pat, "dpi300"))
   {
     canvas_t hi = canvas_new(1200, 600);               /* 4 x 2 in @300 */

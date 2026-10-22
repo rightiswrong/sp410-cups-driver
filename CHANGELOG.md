@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Security
+- Tightened raster geometry limits (<= 10000 x 40000 dots and <= 64 Mpx per
+  page) so a crafted/oversized job cannot force the filter into very large
+  allocations. Oversized pages are rejected before any pixel is read. (audit V11)
+- Build with -fstack-protector-strong as defence-in-depth. (audit V12)
+
 ## [1.0.0] - 2026-10-04
 
 First stable release.
