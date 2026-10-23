@@ -245,6 +245,14 @@ def t_wide_page_clipped(c):
     assert not s.warnings and not lb.warnings
 
 
+def t_oversize_geometry_rejected(c):
+    # A page wider than the geometry cap is refused before large allocations.
+    ras, _ = c.raster("toowide")
+    out, err = c.run(ras, "", expect_rc=1)
+    assert out == b"", "oversize page must produce no printer output"
+    assert "Bad raster geometry" in err, err
+
+
 def t_resample_300dpi(c):
     ras, _ = c.raster("dpi300")
     out, err = c.run(ras, "")

@@ -34,8 +34,10 @@ DOCDIR     ?= $(PREFIX)/share/doc/sp410-cups-driver
 WARN       := -Wall -Wextra -Wshadow -Wformat=2 -Wstrict-prototypes \
               -Wmissing-prototypes -Wno-unused-parameter
 CFLAGS     ?= -O2 -g
+# Stack canaries as defence-in-depth (ASLR/NX come from the OS/toolchain).
+HARDEN     := -fstack-protector-strong
 ALL_CFLAGS := -std=c99 -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE \
-              -DSP410_VERSION=\"$(VERSION)\" $(WARN) $(CUPS_CFLAGS) $(CFLAGS)
+              -DSP410_VERSION=\"$(VERSION)\" $(WARN) $(HARDEN) $(CUPS_CFLAGS) $(CFLAGS)
 ALL_LIBS   := $(CUPS_LIBS) -lm $(LDLIBS)
 
 BUILD      := build

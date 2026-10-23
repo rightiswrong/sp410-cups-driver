@@ -219,7 +219,13 @@ process_page(cups_raster_t *ras, const cups_page_header2_t *h,
             h->cupsColorSpace, h->cupsBitsPerColor, h->cupsColorOrder);
     return -1;
   }
-  if (!sw || !sh || !h->cupsBytesPerLine || sw > 20000 || sh > 100000)
+  /*
+   * Bound page geometry. A 108 mm x 300 mm label at 600 dpi is ~2551 x 7087
+   * px, so these leave generous headroom while capping how much memory one
+   * page can force the filter to allocate (ink plane = width*height).
+   */
+  if (!sw || !sh || !h->cupsBytesPerLine || sw > 10000 || sh > 40000 ||
+      (uint64_t)sw * sh > 64000000)
   {
     fprintf(stderr, "ERROR: Bad raster geometry on page %d (%ux%u)\n", page, sw, sh);
     return -1;
